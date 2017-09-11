@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>flappy_bird</title>
+    <style>
+        *{
+            margin:0;
+            padding:0;
+        }
+        :root{
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+        #canvas{
+            display: block;
+            margin: 50px auto;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="343" height="480"></canvas>
+    <script src="imgs.js"></script>
+    <script src="./bird.js"></script>
+    <script src="./pipe.js"></script>    
+    <script>
+        document.body.addEventListener('touchmove', function (event) {
+            event.preventDefault();
+        }, false);       
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+        var shake = true;
+        var v = 0;
+        var pipes = [];
+        var index = 0;
+        var startTime=0;
+        var starttimer = null;
+        var gameTime=0;
+        var gameTimer = null;
+        var scroll = 0;
+        var scrollImg = [imgs.scroe0,imgs.scroe1,imgs.scroe2,
+              imgs.scroe3,imgs.scroe4,imgs.scroe5,
+              imgs.scroe6,imgs.scroe7,imgs.scroe8,
+              imgs.scroe9];
+        function init(){
+            imgs.loadImg(startLayer)
+        }
+        function drawBg(){
+            ctx.drawImage(imgs.bg,0,0)
+        }
+        function drawGrass(){
+            ctx.drawImage(imgs.grass,3*v--,423);
+            ctx.drawImage(imgs.grass,337+3*v--,423);
+            if(3*v<-343){
+                v=0
+            }
+            
+        }
+        function drawScore(){
+            for(var i = 0; i < scroll.toString().length;i++){
+                ctx.drawImage(scrollImg[parseInt(scroll.toString().substr(i,1))],147+i*23,40)
+            }
+        }
+        function startLayer(){
+            startTimer = setInterval(function(){
+                clean()
+                drawBg()
+                drawGrass();
+                titleShake();
+                drawStartBtn()
+                titleShake()                    
+                if(startTime>=7){
+                shake = !shake
+                startTime = 0;  
+                }
+                startTime++ ;
+                    
+            },24);  
+        }
+        // startLayer()
+        //判断是否越过水管
+        function isSkipped(oPipe){
+            if(bird.posX > oPipe.posX+oPipe.down_pipe.width){
+                oPipe.hadSkipped = true;
+                if(oPipe.hadSkipped&&!oPipe.hadSjuooedChage){
+                    scroll++;
+                    // console.log(scroll.toString().length)
+                    oPipe.hadSjuooedChage = true;
+                }
+            }
+        }
+        function isHit(oPipe){
+            if(bird.posX+bird.bird[0].width>oPipe.posX&&bird.posX<oPipe.down_pipe.width+oPipe.posX){
+                if(bird.posY<oPipe.up_posY||bird.posY+30>oPipe.down_posY){
+                    bird.dead()
+                }
+            }
+        }
+        function gameLayer(){
+            gameTimer = setInterval(function(){
+                clean();
+                drawBg();
+                drawGrass();
+                if(gameTime%5 == 0){
+                    if(gameTime == 30){
+                        createPipes();
+                        gameTime = 0;
+                    }
+                    bird.wingWave()
+                }
+                gameTime++;   
+                for(var i = 0; i < pipes.length; i++){
+                    pipes[i].move()
+                    isHit(pipes[i]);
+                    isSkipped(pipes[i])
+                }
+                drawScore()
+                bird.fly();
+                if(!bird.alive){
+                    gameOver();
+                    reset()
+                }
+            },24)
+        }
+        function drawStartBtn(){
+            ctx.drawImage(imgs.startBtn,130,300)
+        }
+        function clean(){
+            ctx.clearRect(0,0,canvas.width,canvas.height)
+        }
+        function titleShake(){
+            if(shake){
+                ctx.drawImage(imgs.title,53,97);
+                ctx.drawImage(imgs.bird1,250,137)       
+            }else{
+                ctx.drawImage(imgs.title,53,103);
+                ctx.drawImage(imgs.bird1,250,143)  
+            }
+        }
+        function createPipes(){
+            var pipe = new Pipe(imgs.up_pipe,imgs.up_mod,imgs.down_pipe,imgs.down_mod);
+            if(pipes.length < 3){
+                pipes.push(pipe);
+            }else{
+                pipes[index] = pipe;
+                index++;
+                if(index >= 3){
+                    index = 0
+                }
+            }
+        }
+        function kd(e){
+            if(e.keyCode === 32){
+                bird.speed = -10;
+            }
+        }
+        function ts(){
+            bird.speed = -10;
+        }
+        function gameOver(){
+            clearInterval(gameTimer);
+            window.removeEventListener("keydow",kd,false);
+            window.removeEventListener("touchstart",ts,false)
+            ctx.font = "50px blod";
+            ctx.fontWeight = "1000";
+            ctx.fillStyle = "white"
+            ctx.fillText("Game Over",20,200);
+            drawStartBtn();
+        }
+        function reset(){
+            bird.alive = true;
+            bird.posY = 200;
+            bird.speed = 0;
+            pipes = [];
+            scroll = 0;
+            canvas.addEventListener("click",startBtn_click,false)
+        }
+        function startBtn_click(e){
+            if(e.clientX>canvas.offsetLeft+canvas.width/2-imgs.startBtn.width/2&&e.clientY<canvas.offsetTop+300+imgs.startBtn.height&&e.clientX<canvas.offsetLeft+canvas.width/2+imgs.startBtn.width/2&&e.clientY>canvas.offsetTop+300){
+                clean();
+                clearInterval(startTimer);
+                gameLayer();
+                window.addEventListener("keydown",kd,false);
+                window.addEventListener("touchstart",ts,false)
+                canvas.removeEventListener("click",startBtn_click,false)
+
+            }
+        }
+        canvas.addEventListener("click",startBtn_click,false)
+        init()
+    
+        
+
+    </script>
+</body>
+</html>
